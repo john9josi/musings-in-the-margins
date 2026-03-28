@@ -18,6 +18,7 @@ const POEMS_DATA = [
         text: `The tangerine I am eating is me. The mustard greens I am planting are me. I plant with all my heart and mind. I clean this teapot with the kind of attention I would have were I giving the Buddha or Jesus a bath. Nothing should be treated more carefully than anything else. In mindfulness, compassion, irritation, mustard green plant, and teapot are all sacred.`,
         attribution: 'Thich Nhat Hanh'
     },
+    {
         type: 'poem',
         title: 'hugs from behind',
         text: `i like it when my doors open
