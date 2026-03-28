@@ -191,6 +191,7 @@ its still now`
     },
 {
         type: 'poem',
+        hidden: true,
         title: 'bridge road',
         text: `oh sun
 how many mornings have you greeted life with light
