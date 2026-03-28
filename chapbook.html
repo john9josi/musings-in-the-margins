@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>musings in the margins — john josi</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0f0e0c;
+            min-height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 0 20px;
+            font-family: Courier, monospace;
+            user-select: none;
+        }
+
+        /* ── Book ── */
+        .scene {
+            perspective: 2000px;
+        }
+
+        .book {
+            position: relative;
+            width: min(720px, 92vw);
+        }
+
+        /* Ghost pages — injected dynamically */
+        .ghost {
+            position: absolute;
+            background: #f2ede1;
+            border: 1px solid #ddd6c4;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── Page ── */
+        .page {
+            position: relative;
+            z-index: 1;
+            background-color: #f9f6ef;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E");
+            border: 1px solid #ddd7c8;
+            transform-origin: left center;
+            padding: 72px 80px 52px;
+            height: min(740px, calc(100dvh - 110px));
+            display: flex;
+            flex-direction: column;
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.07),
+                0 3px 8px rgba(0,0,0,0.1),
+                0 8px 24px rgba(0,0,0,0.18),
+                0 20px 56px rgba(0,0,0,0.28),
+                0 40px 80px rgba(0,0,0,0.2);
+        }
+
+        .poem-scroll {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cec6b2 transparent;
+        }
+        .poem-scroll::-webkit-scrollbar { width: 3px; }
+        .poem-scroll::-webkit-scrollbar-thumb { background: #cec6b2; border-radius: 2px; }
+        .poem-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        /* Spine shadow + vignette */
+        .page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to right,  rgba(0,0,0,0.055) 0px, transparent 22px),
+                linear-gradient(to bottom, rgba(0,0,0,0.025) 0px, transparent 40px),
+                radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.04) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* ── Page flip animations ── */
+        .page.out-fwd { animation: outFwd 0.38s ease-in forwards; }
+        .page.in-fwd  { animation: inFwd  0.38s ease-out forwards; }
+        .page.out-bwd { animation: outBwd 0.38s ease-in forwards; }
+        .page.in-bwd  { animation: inBwd  0.38s ease-out forwards; }
+
+        @keyframes outFwd {
+            from { transform: rotateY(0deg); }
+            to   { transform: rotateY(-90deg); }
+        }
+        @keyframes inFwd {
+            from { transform: rotateY(90deg); }
+            to   { transform: rotateY(0deg); }
+        }
+        @keyframes outBwd {
+            from { transform: rotateY(0deg); }
+            to   { transform: rotateY(90deg); }
+        }
+        @keyframes inBwd {
+            from { transform: rotateY(-90deg); }
+            to   { transform: rotateY(0deg); }
+        }
+
+        .page { cursor: grab; }
+        .page.dragging { cursor: grabbing; }
+
+        /* ── Cover ── */
+        .cover-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            padding: 32px 0 12px;
+        }
+
+        .cover-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cover-bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cover-ornament {
+            font-size: 26px;
+            color: #b0a494;
+            line-height: 1;
+            margin-bottom: 32px;
+        }
+
+        .cover-title {
+            font-size: 24px;
+            color: #1c1a18;
+            line-height: 1.4;
+            letter-spacing: 0.4px;
+            font-style: italic;
+        }
+
+        .cover-series {
+            font-size: 9.5px;
+            letter-spacing: 3px;
+
+            color: #b0a898;
+            margin-top: 14px;
+        }
+
+        .cover-rule {
+            width: 36px;
+            height: 1px;
+            background: #b0a898;
+            margin: 0 auto 20px;
+        }
+
+        .cover-author {
+            font-size: 10.5px;
+            letter-spacing: 3.5px;
+
+            color: #8a8278;
+            margin-bottom: 10px;
+        }
+
+        .cover-press {
+            font-size: 9.5px;
+            letter-spacing: 2.5px;
+
+            color: #b0a898;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .cover-year {
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: #c8c0b4;
+        }
+
+        /* ── Epigraph ── */
+        .epigraph-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 12px;
+        }
+
+        .epigraph-text {
+            font-size: 11px;
+            line-height: 2.1;
+            color: #3c3a36;
+            font-style: italic;
+            letter-spacing: 0.2px;
+        }
+
+        .epigraph-attribution {
+            margin-top: 30px;
+            font-size: 9px;
+            letter-spacing: 2.5px;
+
+            color: #8a8278;
+            text-align: right;
+        }
+
+        /* ── Poem ── */
+        .poem-title {
+            font-size: 10px;
+            letter-spacing: 2.5px;
+            color: #b0a898;
+            font-style: italic;
+            text-align: left;
+            margin-bottom: 30px;
+            flex-shrink: 0;
+        }
+
+.poem-text {
+            font-size: 10.5px;
+            line-height: 2.05;
+            color: #1c1a18;
+            letter-spacing: 0.2px;
+            white-space: pre-wrap;
+        }
+
+        .page-footer {
+            flex-shrink: 0;
+            padding-top: 16px;
+            text-align: center;
+        }
+
+        .page-number {
+            font-size: 11px;
+            color: #b0a898;
+            letter-spacing: 2px;
+            font-style: italic;
+        }
+
+        /* ── Colophon ── */
+        .colophon-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .colophon-ornament {
+            font-size: 20px;
+            color: #c0b9ac;
+            margin-bottom: 30px;
+        }
+
+        .colophon-text {
+            font-size: 9.5px;
+            color: #b0a898;
+            line-height: 2.2;
+            letter-spacing: 2px;
+
+        }
+
+        /* ── Navigation ── */
+        .nav {
+            margin-top: 26px;
+            display: flex;
+            align-items: center;
+            gap: 38px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #5a5650;
+            font-size: 9.5px;
+            letter-spacing: 2.5px;
+
+            font-family: Courier, monospace;
+            cursor: pointer;
+            padding: 3px 0;
+            border-bottom: 1px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            color: #c0b9ac;
+            border-bottom-color: #5a5650;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.18;
+            cursor: default;
+        }
+
+        .nav-indicator {
+            font-size: 10.5px;
+            color: #3e3c38;
+            letter-spacing: 1px;
+            font-family: Courier, monospace;
+            font-style: italic;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 14px 0 12px;
+            }
+            .page {
+                padding: 44px 36px 32px;
+                height: calc(100dvh - 80px);
+            }
+            .running-header {
+                padding-bottom: 20px;
+            }
+            .poem-text {
+                font-size: 12px;
+                line-height: 1.9;
+            }
+            .nav {
+                margin-top: 16px;
+                gap: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="scene">
+    <div class="book">
+        <div class="page" id="page"></div>
+    </div>
+</div>
+
+<nav class="nav">
+    <button class="nav-btn" id="btn-prev" onclick="go(-1)">← prev</button>
+    <span class="nav-indicator" id="nav-label">cover</span>
+    <button class="nav-btn" id="btn-next" onclick="go(1)">next →</button>
+</nav>
+
+<script>
+// ── Set this to your GitHub raw URL to load poems remotely ──────────────────
+// e.g. 'https://raw.githubusercontent.com/johnjosi/musings/main/poems.js'
+// Leave empty to load local poems.js
+const POEMS_SOURCE = '';
+// ────────────────────────────────────────────────────────────────────────────
+
+const EDITION_NO = Math.floor(Math.random() * 300) + 1;
+let POEMS = [];
+
+
+function updateGhostPages(remaining) {
+    const book = document.querySelector('.book');
+    book.querySelectorAll('.ghost').forEach(g => g.remove());
+    const count = Math.min(remaining, 3);
+    for (let i = count; i >= 1; i--) {
+        const ghost = document.createElement('div');
+        ghost.className = 'ghost';
+        const o = i * 3;
+        ghost.style.cssText = `top:${o}px; right:${-o}px; bottom:${-o}px; left:${o}px; z-index:${-i}; box-shadow: 1px 2px 6px rgba(0,0,0,${0.35 - i*0.05});`;
+        book.insertBefore(ghost, book.firstChild);
+    }
+}
+
+function toRoman(n) {
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+    const syms = ['m','cm','d','cd','c','xc','l','xl','x','ix','v','iv','i'];
+    let result = '';
+    for (let i = 0; i < vals.length; i++) {
+        while (n >= vals[i]) { result += syms[i]; n -= vals[i]; }
+    }
+    return result;
+}
+
+let idx = 0;
+let busy = false;
+
+function render(i) {
+    const p = POEMS[i];
+    const el = document.getElementById('page');
+
+    if (p.type === 'cover') {
+        el.innerHTML = `
+            <div class="cover-inner">
+                <div class="cover-top">
+                    <div class="cover-ornament">❧</div>
+                    <div class="cover-title">musings in the margins</div>
+                    <div class="cover-series">a self-published collection of poems, still being written</div>
+                </div>
+                <div class="cover-bottom">
+                    <div class="cover-rule"></div>
+                    <div class="cover-author">john josi</div>
+                    <div class="cover-press">equanimity press</div>
+                    <div class="cover-year">mmxxvi &middot; no. ${EDITION_NO} of n</div>
+                </div>
+            </div>`;
+    } else if (p.type === 'epigraph') {
+        el.innerHTML = `
+            <div class="epigraph-inner">
+                <div class="epigraph-text">${p.text}</div>
+                <div class="epigraph-attribution">${p.attribution}</div>
+            </div>`;
+    } else if (p.type === 'colophon') {
+        el.innerHTML = `
+            <div class="colophon-inner">
+                <div class="colophon-ornament">❧</div>
+                <div class="colophon-text">
+                    musings in the margins<br>
+                    john josi<br>
+                    equanimity press &middot; mmxxvi<br>
+                    no. ${EDITION_NO} of n<br>
+                    all rights reserved
+                </div>
+            </div>`;
+    } else {
+        const poemIndex = POEMS.slice(0, i + 1).filter(q => q.type === 'poem').length;
+        el.innerHTML = `
+            <div class="poem-title">${p.title}</div>
+            <div class="poem-scroll"><div class="poem-text">${p.text}</div></div>
+            <div class="page-footer"><span class="page-number">– ${toRoman(poemIndex)} –</span></div>`;
+
+        const scroller = el.querySelector('.poem-scroll');
+        let userScrolled = false;
+
+        scroller.addEventListener('scroll', () => { userScrolled = true; }, { once: true });
+
+        setTimeout(() => {
+            if (userScrolled) return;
+            const canScroll = scroller.scrollHeight > scroller.clientHeight;
+            if (!canScroll) return;
+
+            let expected = 0;
+            const speed = 0.06;
+
+            function step() {
+                const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+                if (expected >= maxScroll) return;
+                if (Math.abs(scroller.scrollTop - expected) > 3) return;
+                expected = Math.min(expected + speed, maxScroll);
+                scroller.scrollTop = expected;
+                requestAnimationFrame(step);
+            }
+
+            requestAnimationFrame(step);
+        }, 5000);
+    }
+
+    const remaining = POEMS.length - 1 - i;
+    updateGhostPages(remaining);
+
+    document.getElementById('btn-prev').disabled = i === 0;
+    document.getElementById('btn-next').disabled = i === POEMS.length - 1;
+
+    const poemCount = POEMS.filter(p => p.type === 'poem').length;
+    if (i === 0) {
+        document.getElementById('nav-label').textContent = 'cover';
+    } else if (p.type === 'epigraph') {
+        document.getElementById('nav-label').textContent = '· · ·';
+    } else if (p.type === 'colophon') {
+        document.getElementById('nav-label').textContent = 'fin';
+    } else {
+        const pNum = POEMS.slice(0, i + 1).filter(q => q.type === 'poem').length;
+        document.getElementById('nav-label').textContent = `${pNum} of n`;
+    }
+}
+
+function go(dir) {
+    if (busy) return;
+    const next = idx + dir;
+    if (next < 0 || next >= POEMS.length) return;
+
+    busy = true;
+    const el = document.getElementById('page');
+    const outCls = dir > 0 ? 'out-fwd' : 'out-bwd';
+    const inCls  = dir > 0 ? 'in-fwd'  : 'in-bwd';
+
+    el.classList.add(outCls);
+
+    setTimeout(() => {
+        el.classList.remove(outCls);
+        idx = next;
+        render(idx);
+        el.classList.add(inCls);
+        el.addEventListener('animationend', () => {
+            el.classList.remove(inCls);
+            busy = false;
+        }, { once: true });
+    }, 380);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+});
+
+// ── Drag to turn ────────────────────────────────────────────────────────────
+let drag = null;
+
+function dragStart(e) {
+    if (busy) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const el = document.getElementById('page');
+    const rect = el.getBoundingClientRect();
+    const relX = (clientX - rect.left) / rect.width;
+    const dir = relX > 0.5 ? 1 : -1;
+    if (dir > 0 && idx >= POEMS.length - 1) return;
+    if (dir < 0 && idx <= 0) return;
+    drag = { startX: clientX, dir, rot: 0, W: rect.width };
+    el.style.transition = 'none';
+    el.classList.add('dragging');
+    e.preventDefault();
+}
+
+function dragMove(e) {
+    if (!drag) return;
+    e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const dx = clientX - drag.startX;
+    const raw = (dx / drag.W) * 90;
+    drag.rot = drag.dir > 0
+        ? Math.max(-90, Math.min(0, raw))
+        : Math.max(0,  Math.min(90, raw));
+    document.getElementById('page').style.transform = `rotateY(${drag.rot}deg)`;
+}
+
+function dragEnd() {
+    if (!drag) return;
+    const { dir, rot } = drag;
+    drag = null;
+    const el = document.getElementById('page');
+    el.classList.remove('dragging');
+
+    if (Math.abs(rot) >= 35) {
+        busy = true;
+        const remaining = 90 - Math.abs(rot);
+        const ms = Math.max(60, (remaining / 90) * 260);
+        el.style.transition = `transform ${ms}ms ease-in`;
+        el.style.transform = `rotateY(${dir > 0 ? -90 : 90}deg)`;
+        setTimeout(() => {
+            el.style.transition = 'none';
+            el.style.transform = `rotateY(${dir > 0 ? 90 : -90}deg)`;
+            idx += dir;
+            render(idx);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                el.style.transition = 'transform 0.26s ease-out';
+                el.style.transform = 'rotateY(0deg)';
+                setTimeout(() => { el.style.transition = ''; el.style.transform = ''; busy = false; }, 260);
+            }));
+        }, ms + 10);
+    } else {
+        el.style.transition = 'transform 0.22s ease-out';
+        el.style.transform = 'rotateY(0deg)';
+        setTimeout(() => { el.style.transition = ''; el.style.transform = ''; }, 220);
+    }
+}
+
+const bookEl = document.querySelector('.book');
+bookEl.addEventListener('mousedown',  dragStart);
+bookEl.addEventListener('touchstart', dragStart, { passive: false });
+document.addEventListener('mousemove',  dragMove);
+document.addEventListener('touchmove',  dragMove, { passive: false });
+document.addEventListener('mouseup',  dragEnd);
+document.addEventListener('touchend', dragEnd);
+
+function init() {
+    POEMS = [{ type: 'cover' }, ...POEMS_DATA.filter(p => !p.hidden), { type: 'colophon' }];
+    render(0);
+}
+
+function loadRemote(src) {
+    return fetch(src)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(code => new Promise((resolve, reject) => {
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const s = document.createElement('script');
+            s.src = url;
+            s.onload = () => { URL.revokeObjectURL(url); resolve(); };
+            s.onerror = reject;
+            document.head.appendChild(s);
+        }));
+}
+
+function loadLocal() {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'poems.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+(POEMS_SOURCE ? loadRemote(POEMS_SOURCE) : loadLocal())
+    .then(init)
+    .catch(err => console.error('Failed to load poems:', err));
+</script>
+</body>
+</html>
