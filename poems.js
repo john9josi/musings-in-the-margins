@@ -155,6 +155,7 @@ into the wild blue yonder`
     },
 	{
         type: 'poem',
+        hidden: true,
         title: 'just for you',
         text: `i have kisses for you
 sweet delicate ones for your lips
